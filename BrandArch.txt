@@ -1,0 +1,509 @@
+import React, { useState, useMemo } from 'react';
+import { 
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell 
+} from 'recharts';
+import { 
+  Shield, Compass, BookOpen, Swords, Zap, Wand2, 
+  Users, Heart, Smile, Palette, HelpingHand, Crown,
+  ArrowRight, CheckCircle2, ChevronRight, BarChart3
+} from 'lucide-react';
+
+
+// Mappings for Ethos and Archetypes
+const ETHOS_MAP = {
+  thumbprint: { id: 'thumbprint', name: 'Leaving a Thumbprint on the world' },
+  paradise: { id: 'paradise', name: 'Yearning for Paradise' },
+  connection: { id: 'connection', name: 'No man is an island' },
+  structure: { id: 'structure', name: 'Providing structure to the world' }
+};
+
+const ARCHETYPES = {
+  a: { id: 'a', name: 'Innocent', ethos: 'paradise', icon: Shield, color: 'bg-emerald-100 text-emerald-600', image: 'https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?auto=format&fit=crop&w=400&q=80', desc: 'Optimist, pur, caută fericirea.' },
+  b: { id: 'b', name: 'Explorer', ethos: 'paradise', icon: Compass, color: 'bg-green-100 text-green-600', image: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=400&q=80', desc: 'Independent, ambițios, caută libertatea.' },
+  c: { id: 'c', name: 'Sage', ethos: 'paradise', icon: BookOpen, color: 'bg-teal-100 text-teal-600', image: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=400&q=80', desc: 'Înțelept, analitic, caută adevărul.' },
+  d: { id: 'd', name: 'Hero', ethos: 'thumbprint', icon: Swords, color: 'bg-red-100 text-red-600', image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=400&q=80', desc: 'Curajos, determinat, vrea să lase o urmă.' },
+  e: { id: 'e', name: 'Outlaw', ethos: 'thumbprint', icon: Zap, color: 'bg-orange-100 text-orange-600', image: 'https://images.unsplash.com/photo-1499914485622-a88fac536970?auto=format&fit=crop&w=400&q=80', desc: 'Rebel, revoluționar, rupe regulile.' },
+  f: { id: 'f', name: 'Magician', ethos: 'thumbprint', icon: Wand2, color: 'bg-purple-100 text-purple-600', image: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=400&q=80', desc: 'Vizionar, carismatic, transformă realitatea.' },
+  g: { id: 'g', name: 'Regular Guy', ethos: 'connection', icon: Users, color: 'bg-blue-100 text-blue-600', image: 'https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?auto=format&fit=crop&w=400&q=80', desc: 'Empatic, realist, vrea să aparțină.' },
+  h: { id: 'h', name: 'Lover', ethos: 'connection', icon: Heart, color: 'bg-pink-100 text-pink-600', image: 'https://images.unsplash.com/photo-1511895426328-dc8714191300?auto=format&fit=crop&w=400&q=80', desc: 'Pasionat, intim, caută conexiunea.' },
+  i: { id: 'i', name: 'Jester', ethos: 'connection', icon: Smile, color: 'bg-yellow-100 text-yellow-600', image: 'https://images.unsplash.com/photo-1531256379416-9f000e90aacc?auto=format&fit=crop&w=400&q=80', desc: 'Jucăuș, trăiește clipa, aduce bucurie.' },
+  j: { id: 'j', name: 'Creator', ethos: 'structure', icon: Palette, color: 'bg-indigo-100 text-indigo-600', image: 'https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?auto=format&fit=crop&w=400&q=80', desc: 'Inovator, expresiv, construiește lucruri noi.' },
+  k: { id: 'k', name: 'Caregiver', ethos: 'structure', icon: HelpingHand, color: 'bg-cyan-100 text-cyan-600', image: 'https://images.unsplash.com/photo-1469571486292-0ba58a3f068b?auto=format&fit=crop&w=400&q=80', desc: 'Altruist, protector, are grijă de ceilalți.' },
+  l: { id: 'l', name: 'Ruler', ethos: 'structure', icon: Crown, color: 'bg-slate-100 text-slate-600', image: 'https://images.unsplash.com/photo-1552083974-186346191183?auto=format&fit=crop&w=400&q=80', desc: 'Lider, organizat, oferă stabilitate.' }
+};
+
+const QUESTIONS = [
+  {
+    id: 'q1',
+    wave: 1,
+    title: 'Gândește-te la cum se manifestă brandul în mod real astăzi.',
+    subtitle: 'Alege imaginea (simbolul) care consideri că exprimă cel mai bine spiritul lui.',
+    type: 'visual',
+    options: Object.values(ARCHETYPES)
+  },
+  {
+    id: 'q2',
+    wave: 1,
+    title: 'Dacă brandul tău ar fi o lume, cum ar arăta?',
+    type: 'text',
+    options: [
+      { id: 'd', text: 'Un oraș în plină schimbare, cu șantiere, macarale și oameni care construiesc ceva nou', ethos: 'structure' },
+      { id: 'b', text: 'Un drum de munte dimineața devreme. Nu știi unde duce, dar te inspiră să vezi ce e mai departe', ethos: 'paradise' },
+      { id: 'c', text: 'O masă lungă la care oamenii stau de vorbă și mai adaugă câte un scaun când apare cineva nou', ethos: 'connection' },
+      { id: 'a', text: 'O gară perfect organizată unde toate trenurile pleacă la timp, cu panouri ușor de citit', ethos: 'thumbprint' }
+    ]
+  },
+  {
+    id: 'q3',
+    wave: 1,
+    title: 'Dacă brandul tău ar fi o persoană din viața clientului, cine ar fi?',
+    type: 'text',
+    options: [
+      { id: 'a', text: 'Un antrenor care te provoacă să dai mai mult', ethos: 'thumbprint' },
+      { id: 'b', text: 'Un ghid care te ajută să descoperi ce e potrivit pentru tine', ethos: 'paradise' },
+      { id: 'c', text: 'Un prieten bun care e mereu acolo', ethos: 'connection' },
+      { id: 'd', text: 'Un expert de încredere pe care te bazezi când contează', ethos: 'structure' }
+    ]
+  },
+  {
+    id: 'q4',
+    wave: 2,
+    title: 'Care este funcția principală a categoriei de produs?',
+    type: 'text',
+    options: [
+      { id: 'a', text: 'Să facă lucrurile să pară simple, ușor de înțeles, curate' },
+      { id: 'b', text: 'Să îi facă pe oameni să se simtă liberi, non-conformiști, pionieri' },
+      { id: 'c', text: 'Să ofere claritate și informații care ajută la decizii bune' },
+      { id: 'd', text: 'Să îi ajute pe oameni să obțină rezultate mai bune și să își depășească limitele' },
+      { id: 'e', text: 'Să ofere o alternativă care rupe tiparele și eliberează de reguli' },
+      { id: 'f', text: 'Să transforme o dorință într-o experiență reală și memorabilă. Să creeze momente magice.' },
+      { id: 'g', text: 'Să fie util în viața de zi cu zi și ușor de integrat în rutina oamenilor' },
+      { id: 'h', text: 'Să transforme momentele obișnuite în experiențe de răsfăț și plăcere' },
+      { id: 'i', text: 'Să aducă bună dispoziție și energie pozitivă în viața oamenilor.' },
+      { id: 'j', text: 'Să le permită oamenilor să își exprime stilul și ideile proprii' },
+      { id: 'k', text: 'Să ofere protecție, grijă și sentimentul că cineva are grijă de tine' },
+      { id: 'l', text: 'Să ofere control, standarde și sentimentul că lucrurile importante sunt gestionate corect' }
+    ]
+  },
+  {
+    id: 'q5',
+    wave: 2,
+    title: 'Care dintre variante ar putea apărea cel mai natural într-o reclamă a brandului tău?',
+    type: 'text',
+    options: [
+      { id: 'a', text: 'Bucură-te de viață pur și simplu' },
+      { id: 'b', text: 'Alege-ți propriul drum' },
+      { id: 'c', text: 'Adevărul te face liber' },
+      { id: 'd', text: 'Poți mai mult decât crezi' },
+      { id: 'e', text: 'Nu trebuie să joci după regulile altora' },
+      { id: 'f', text: 'Imposibilul devine posibil' },
+      { id: 'g', text: 'Ești bine așa cum ești' },
+      { id: 'h', text: 'Pentru momente care merită savurate' },
+      { id: 'i', text: 'Viața e mai bună când te bucuri de ea' },
+      { id: 'j', text: 'Express yourself, Reinvent yourself' },
+      { id: 'k', text: 'Suntem aici oricând ai avea nevoie' },
+      { id: 'l', text: 'Pentru cei care aleg ce e mai bun' }
+    ]
+  },
+  {
+    id: 'q6',
+    wave: 2,
+    title: 'Care descriere se potrivește cel mai bine atmosferei reale din organizația ta?',
+    subtitle: 'Diagnostic intern (această întrebare reflectă cultura echipei)',
+    type: 'text',
+    options: [
+      { id: 'a', text: 'Spirit de cooperare, nu de competiție' },
+      { id: 'b', text: 'Oamenii sunt încurajați să încerce idei noi și să iasă din tipar' },
+      { id: 'c', text: 'Cultură care pune accent pe argumentele bune, expertiza, analiza și gândirea critică.' },
+      { id: 'd', text: 'Echipă motivată puternic de simțul misiunii, de sentimentul că ceea ce face chiar contează' },
+      { id: 'e', text: 'Echipă care provoacă constant și caută rute neconvenționale' },
+      { id: 'f', text: 'Sunt încurajate viziunile îndrăznețe și ideile care par greu de realizat.' },
+      { id: 'g', text: 'Atmosferă prietenoasă, de echipă unită, fără ierarhii rigide' },
+      { id: 'h', text: 'Un mediu de lucru în care contează mult atmosfera, entuziasmul și cum se simt oamenii unii cu alții' },
+      { id: 'i', text: 'Umorul și buna dispoziție fac parte din viața de zi cu zi la muncă' },
+      { id: 'j', text: 'Un loc unde ideile originale sunt mai valorizate decât regulile fixe' },
+      { id: 'k', text: 'Cultură în care oamenii sunt atenți să nu-i lase pe alții la greu' },
+      { id: 'l', text: 'Există roluri clare, structură și deciziile sunt luate ferm.' }
+    ]
+  }
+];
+
+
+export default function App() {
+  const [step, setStep] = useState(0); // 0 = Intro, 1-6 = Questions, 7 = Results
+  const [answers, setAnswers] = useState({});
+  const [dominantEthos, setDominantEthos] = useState(null);
+
+  // Helper to handle answer selection
+  const handleAnswer = (questionId, value) => {
+    setAnswers(prev => ({ ...prev, [questionId]: value }));
+  };
+
+
+  const determineEthos = () => {
+    // Q1 gives an archetype ID. Map it back to ethos.
+    const q1Ethos = ARCHETYPES[answers.q1]?.ethos;
+    // Q2 and Q3 give ethos ids directly based on prompt logic.
+    // Wait, Q2/Q3 letters map to Ethos: a=Thumbprint, b=Paradise, c=Connection, d=Structure
+    const mapQ2Q3 = { a: 'thumbprint', b: 'paradise', c: 'connection', d: 'structure' };
+    const q2Ethos = mapQ2Q3[answers.q2];
+    const q3Ethos = mapQ2Q3[answers.q3];
+
+    const ethosCounts = { thumbprint: 0, paradise: 0, connection: 0, structure: 0 };
+    if (q1Ethos) ethosCounts[q1Ethos]++;
+    if (q2Ethos) ethosCounts[q2Ethos]++;
+    if (q3Ethos) ethosCounts[q3Ethos]++;
+
+    let maxScore = 0;
+    let winner = null;
+    let isTie = false;
+
+    Object.entries(ethosCounts).forEach(([ethos, score]) => {
+      if (score > maxScore) {
+        maxScore = score;
+        winner = ethos;
+        isTie = false;
+      } else if (score === maxScore && score > 0) {
+        isTie = true;
+      }
+    });
+
+    // If all 3 are different (1-1-1), it's a tie, return null so Wave 2 shows all options
+    if (isTie) {
+      setDominantEthos('tie');
+    } else {
+      setDominantEthos(winner);
+    }
+    
+    setStep(4); // Move to Q4
+  };
+
+  const calculateResults = () => {
+    // Calculate final scores based on Q4 and Q5
+    const scores = {};
+    Object.keys(ARCHETYPES).forEach(key => scores[key] = 0);
+
+    // Q4 = 2 points
+    if (answers.q4) scores[answers.q4] += 2;
+    // Q5 = 1 point
+    if (answers.q5) scores[answers.q5] += 1;
+
+    let winnerId = null;
+    let maxScore = -1;
+
+    Object.entries(scores).forEach(([id, score]) => {
+      if (score > maxScore) {
+        maxScore = score;
+        winnerId = id;
+      }
+    });
+
+    return { winnerId, maxScore, scores };
+  };
+
+
+  if (step === 0) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 font-sans">
+        <div className="max-w-2xl bg-white rounded-2xl shadow-xl overflow-hidden">
+          <div className="bg-slate-900 p-8 text-white text-center">
+            <div className="w-16 h-16 bg-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-6 transform rotate-3 shadow-lg">
+              <BarChart3 size={32} className="text-white transform -rotate-3" />
+            </div>
+            <h1 className="text-3xl md:text-4xl font-bold mb-4">Descoperă ADN-ul Brandului Tău</h1>
+            <p className="text-slate-300 text-lg">Chestionar de Determinare a Profilului Arhetipal</p>
+          </div>
+          <div className="p-8">
+            <p className="text-slate-600 mb-6 leading-relaxed">
+              Acest instrument te va ajuta să identifici energia de bază a brandului tău și stilul prin care acesta ar trebui să se manifeste în piață. 
+              Vom analiza atât percepția externă dorită, cât și alinierea cu cultura voastră internă.
+            </p>
+            <div className="space-y-4 mb-8">
+              <div className="flex items-center text-slate-700 bg-slate-50 p-3 rounded-lg">
+                <CheckCircle2 className="text-blue-500 mr-3" size={20} />
+                <span><strong>Valul 1:</strong> Determinăm Ethosul (energia de bază)</span>
+              </div>
+              <div className="flex items-center text-slate-700 bg-slate-50 p-3 rounded-lg">
+                <CheckCircle2 className="text-blue-500 mr-3" size={20} />
+                <span><strong>Valul 2:</strong> Rafinăm Arhetipul dominant</span>
+              </div>
+            </div>
+            <button 
+              onClick={() => setStep(1)}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-8 rounded-xl transition-all duration-200 flex items-center justify-center group"
+            >
+              Începe Analiza
+              <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" size={20} />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+
+  if (step === 7) {
+    const { winnerId, maxScore, scores } = calculateResults();
+    const winnerData = ARCHETYPES[winnerId];
+    
+    // Insights Logic
+    const isUnderDeveloped = maxScore < 3;
+    const cultureAligned = answers.q6 === winnerId;
+
+    // Prepare chart data
+    const chartData = Object.values(ARCHETYPES).map(arch => ({
+      name: arch.name,
+      score: scores[arch.id],
+      isWinner: arch.id === winnerId
+    })).sort((a, b) => b.score - a.score);
+
+    return (
+      <div className="min-h-screen bg-slate-50 py-12 px-4 font-sans">
+        <div className="max-w-4xl mx-auto space-y-8">
+          
+          <div className="bg-white rounded-3xl shadow-lg p-8 md:p-12 text-center relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"></div>
+            <h2 className="text-slate-500 font-semibold tracking-wider uppercase mb-2">Rezultat Analiză</h2>
+            <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 mb-6">
+              Arhetipul: <span className="text-blue-600">{winnerData.name}</span>
+            </h1>
+            
+            <div className="flex flex-col md:flex-row items-center justify-center gap-6 mb-8">
+              <div className={`w-32 h-32 md:w-40 md:h-40 rounded-full overflow-hidden border-4 border-white shadow-xl flex-shrink-0 relative`}>
+                <img 
+                  src={winnerData.image} 
+                  alt={winnerData.name} 
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = `https://placehold.co/400x400/f8fafc/334155?text=${winnerData.name}`;
+                  }}
+                />
+                <div className={`absolute bottom-2 right-2 w-10 h-10 rounded-full flex items-center justify-center shadow-lg border-2 border-white ${winnerData.color}`}>
+                  <winnerData.icon size={20} />
+                </div>
+              </div>
+              <p className="text-xl text-slate-600 max-w-md text-left">
+                {winnerData.desc} Energia dominantă a brandului face parte din categoria 
+                <strong className="text-slate-900 ml-1">
+                  "{ETHOS_MAP[winnerData.ethos].name}"
+                </strong>.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-8">
+            <div className="bg-white rounded-3xl shadow-lg p-8">
+              <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center">
+                <Zap className="mr-2 text-yellow-500" /> Insights Strategice
+              </h3>
+              
+              <div className="space-y-6">
+                {isUnderDeveloped ? (
+                  <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg">
+                    <h4 className="font-semibold text-red-800 mb-1">Brand în definire arhetipală</h4>
+                    <p className="text-red-700 text-sm">
+                      Scorul arhetipului principal este scăzut ({maxScore} pct). Comunicarea actuală nu susține clar energia arhetipală a categoriei principale de produs. Este nevoie de o direcție mai asumată.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded-r-lg">
+                    <h4 className="font-semibold text-green-800 mb-1">Contur Arhetipal Puternic</h4>
+                    <p className="text-green-700 text-sm">
+                      Brandul are o direcție clară ({maxScore} pct). Mențineți consistența în comunicare.
+                    </p>
+                  </div>
+                )}
+
+                {cultureAligned ? (
+                  <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg">
+                    <h4 className="font-semibold text-blue-800 mb-1">Aliniere Internă Excelentă</h4>
+                    <p className="text-blue-700 text-sm">
+                      Cultura internă a organizației susține perfect spiritul arhetipal al brandului. Oamenii trăiesc valorile pe care le promit clienților.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="bg-orange-50 border-l-4 border-orange-500 p-4 rounded-r-lg">
+                    <h4 className="font-semibold text-orange-800 mb-1">Tensiune Culturală / Aliniere</h4>
+                    <p className="text-orange-700 text-sm">
+                      Cultura internă ({ARCHETYPES[answers.q6].name}) pare să aibă o energie diferită față de brand ({winnerData.name}). Merită explorat dacă este o tensiune creativă utilă sau o problemă de aliniere care creează disonanță.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="bg-white rounded-3xl shadow-lg p-8">
+              <h3 className="text-xl font-bold text-slate-900 mb-6">Distribuția Arhetipurilor</h3>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartData} layout="vertical" margin={{ top: 0, right: 0, left: 30, bottom: 0 }}>
+                    <XAxis type="number" hide />
+                    <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} />
+                    <Tooltip cursor={{fill: '#f1f5f9'}} contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}/>
+                    <Bar dataKey="score" radius={[0, 4, 4, 0]} barSize={20}>
+                      {chartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.isWinner ? '#3b82f6' : '#cbd5e1'} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+          
+          <div className="text-center">
+             <button 
+                onClick={() => {
+                  setStep(0);
+                  setAnswers({});
+                  setDominantEthos(null);
+                }}
+                className="text-slate-500 hover:text-slate-800 font-medium transition-colors"
+              >
+                Reia Chestionarul
+              </button>
+          </div>
+
+        </div>
+      </div>
+    );
+  }
+
+  
+  const currentQ = QUESTIONS[step - 1];
+  const progress = (step / 6) * 100;
+  
+  // Filter options for Wave 2 based on Dominant Ethos
+  let displayOptions = currentQ.options;
+  if (currentQ.wave === 2 && dominantEthos && dominantEthos !== 'tie') {
+    // Only show options where the corresponding archetype matches the dominant ethos
+    displayOptions = currentQ.options.filter(opt => {
+      const archetypeForOption = ARCHETYPES[opt.id];
+      return archetypeForOption && archetypeForOption.ethos === dominantEthos;
+    });
+  }
+
+  const handleNext = () => {
+    if (step === 3) {
+      determineEthos(); // Calculates ethos and jumps to step 4
+    } else if (step === 6) {
+      setStep(7); // Jump to results
+    } else {
+      setStep(step + 1);
+    }
+  };
+
+  const isCurrentAnswered = !!answers[currentQ.id];
+
+  return (
+    <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
+      {/* Header & Progress */}
+      <div className="bg-white shadow-sm pt-6 pb-4 px-4 sticky top-0 z-10">
+        <div className="max-w-3xl mx-auto">
+          <div className="flex justify-between items-center mb-4">
+            <span className="text-sm font-bold text-slate-400 uppercase tracking-wider">
+              {currentQ.wave === 1 ? 'Valul 1: Ethos' : 'Valul 2: Arhetip'}
+            </span>
+            <span className="text-sm font-medium text-slate-500">
+              Întrebarea {step} / 6
+            </span>
+          </div>
+          <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+            <div 
+              className="bg-blue-600 h-2 rounded-full transition-all duration-500 ease-out" 
+              style={{ width: `${progress}%` }}
+            ></div>
+          </div>
+        </div>
+      </div>
+
+      {/* Question Container */}
+      <div className="flex-1 flex flex-col items-center py-8 px-4 w-full max-w-4xl mx-auto">
+        <div className="w-full text-center mb-10">
+          <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-3">{currentQ.title}</h2>
+          {currentQ.subtitle && <p className="text-slate-500 text-lg">{currentQ.subtitle}</p>}
+        </div>
+
+        {/* Options Grid */}
+        <div className={`w-full ${currentQ.type === 'visual' ? 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4' : 'flex flex-col gap-3'}`}>
+          {displayOptions.map((opt) => {
+            const isSelected = answers[currentQ.id] === opt.id;
+            
+            if (currentQ.type === 'visual') {
+              return (
+                <button
+                  key={opt.id}
+                  onClick={() => handleAnswer(currentQ.id, opt.id)}
+                  className={`
+                    flex flex-col items-center justify-center p-3 rounded-2xl border-2 transition-all duration-200 group relative
+                    ${isSelected ? 'border-blue-500 bg-blue-50 shadow-lg transform scale-105' : 'border-slate-200 bg-white hover:border-blue-300 hover:shadow-md'}
+                  `}
+                >
+                  <div className="w-full aspect-square rounded-xl overflow-hidden mb-3 relative">
+                    <img 
+                      src={opt.image} 
+                      alt={`Imagine ${opt.id.toUpperCase()}`} 
+                      className={`w-full h-full object-cover transition-transform duration-500 ${isSelected ? 'scale-110' : 'group-hover:scale-110'}`}
+                      loading="lazy"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = `https://placehold.co/400x400/f8fafc/334155?text=${opt.name}`;
+                      }}
+                    />
+                    {isSelected && (
+                      <div className="absolute inset-0 bg-blue-500/20 flex items-center justify-center">
+                         <div className="bg-white rounded-full p-1 shadow-md">
+                            <CheckCircle2 className="text-blue-500" size={24} />
+                         </div>
+                      </div>
+                    )}
+                  </div>
+                  <span className="text-sm font-semibold text-slate-700 text-center">Imaginea {opt.id.toUpperCase()}</span>
+                </button>
+              );
+            }
+
+            // Text Options
+            return (
+              <button
+                key={opt.id}
+                onClick={() => handleAnswer(currentQ.id, opt.id)}
+                className={`
+                  text-left p-5 rounded-xl border-2 transition-all duration-200 flex items-center justify-between group
+                  ${isSelected ? 'border-blue-500 bg-blue-50 shadow-sm' : 'border-slate-200 bg-white hover:border-blue-300'}
+                `}
+              >
+                <span className={`text-lg ${isSelected ? 'text-blue-900 font-medium' : 'text-slate-700'}`}>
+                  {opt.text}
+                </span>
+                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ml-4
+                  ${isSelected ? 'border-blue-500 bg-blue-500' : 'border-slate-300'}
+                `}>
+                  {isSelected && <div className="w-2 h-2 rounded-full bg-white"></div>}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Navigation Actions */}
+        <div className="w-full mt-12 flex justify-end">
+          <button
+            onClick={handleNext}
+            disabled={!isCurrentAnswered}
+            className={`
+              flex items-center px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300
+              ${isCurrentAnswered 
+                ? 'bg-slate-900 text-white hover:bg-slate-800 shadow-lg hover:shadow-xl translate-y-0 hover:-translate-y-1' 
+                : 'bg-slate-200 text-slate-400 cursor-not-allowed'}
+            `}
+          >
+            {step === 6 ? 'Vezi Rezultatele' : 'Următoarea Întrebare'}
+            <ChevronRight className="ml-2" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
